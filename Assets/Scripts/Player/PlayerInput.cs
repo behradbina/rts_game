@@ -2,17 +2,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 
-namespace GameDevTV.RTS
+namespace GameDevTV.RTS.Player
 {
     public class NewMonoBehaviourScript : MonoBehaviour
     {
         [SerializeField] private Transform cameraTarget;
         [SerializeField] private CinemachineCamera cinemachineCamera;
-        [SerializeField] private float keyboardPanSpeed = 5f;
-        [SerializeField] private float zoomSpeed = 1f;
-        [SerializeField] private float rotationSpeed = 1f;
-        [SerializeField] private float zoomDistance = 1f;
-        [SerializeField] private float minZoomDistance = 7.5f;
+        [SerializeField] private CameraConfig cameraConfig;
         private CinemachineFollow cinemachineFollow;
         private float zoomStartTime;
         private float rotationStartTime;
@@ -41,30 +37,72 @@ namespace GameDevTV.RTS
 
         void HandlePanning()
         {
-            Vector2 moveAmount = Vector2.zero;
-
-            if(Keyboard.current.upArrowKey.isPressed)
-            {
-                moveAmount.y += keyboardPanSpeed;
-            }
-
-            if(Keyboard.current.downArrowKey.isPressed)
-            {
-                moveAmount.y -= keyboardPanSpeed;
-            }
-            if(Keyboard.current.leftArrowKey.isPressed)
-            {
-                moveAmount.x -= keyboardPanSpeed;
-            }
-            if(Keyboard.current.rightArrowKey.isPressed){
-                moveAmount.x += keyboardPanSpeed;       
-
-            }
-
+            Vector2 moveAmount = GetKeyboardMoveAmount();
+            moveAmount += GetMouseMoveAmount();
             moveAmount *= Time.deltaTime;
 
             cameraTarget.position += new Vector3(moveAmount.x, 0, moveAmount.y);
         }
+
+        private Vector2 GetKeyboardMoveAmount()
+        {
+            Vector2 moveAmount = Vector2.zero;
+
+            if(Keyboard.current.upArrowKey.isPressed)
+            {
+                moveAmount.y += cameraConfig.KeyboardPanSpeed;
+            }
+
+            if(Keyboard.current.downArrowKey.isPressed)
+            {
+                moveAmount.y -= cameraConfig.KeyboardPanSpeed;
+            }
+            if(Keyboard.current.leftArrowKey.isPressed)
+            {
+                moveAmount.x -= cameraConfig.KeyboardPanSpeed;
+            }
+            if(Keyboard.current.rightArrowKey.isPressed)
+            {
+                moveAmount.x += cameraConfig.KeyboardPanSpeed;       
+            }
+
+            return moveAmount;
+        }
+
+        private Vector2 GetMouseMoveAmount()
+        {
+            Vector2 moveAmount = Vector2.zero;
+            
+            if(!cameraConfig.EnableEdgePan)
+            {
+                return moveAmount;
+            }
+
+            Vector2 mousePosition = Mouse.current.position.ReadValue();
+            int screenWidth = Screen.width;
+            int screenHeight = Screen.height;
+
+            if (mousePosition.x <= cameraConfig.EdgePanSize)
+            {
+                moveAmount.x -= cameraConfig.MousePanSpeed;
+            }
+            else if (mousePosition.x >= screenWidth - cameraConfig.EdgePanSize)
+            {
+                moveAmount.x += cameraConfig.MousePanSpeed;
+            }
+
+            if (mousePosition.y >= screenHeight - cameraConfig.EdgePanSize)
+            {
+                moveAmount.y += cameraConfig.MousePanSpeed;
+            }
+            else if (mousePosition.y <= cameraConfig.EdgePanSize)
+            {
+                moveAmount.y -= cameraConfig.MousePanSpeed;
+            }
+
+            return moveAmount;
+        }
+
 
         private void HandleZooming()
         {
@@ -74,14 +112,14 @@ namespace GameDevTV.RTS
             }
 
 
-            float zoomTime = Mathf.Clamp01((Time.time - zoomStartTime) * zoomSpeed);
+            float zoomTime = Mathf.Clamp01((Time.time - zoomStartTime) * cameraConfig.ZoomSpeed);
             Vector3 targetFollowOffset;
 
             if (Keyboard.current.endKey.isPressed)
             {
                 targetFollowOffset = new Vector3 (
                     cinemachineFollow.FollowOffset.x,
-                    minZoomDistance,
+                    cameraConfig.MinZoomDistance,
                     cinemachineFollow.FollowOffset.z
                 );
             }
@@ -108,7 +146,7 @@ namespace GameDevTV.RTS
                 rotationStartTime = Time.time;
             }
 
-            float rotationTime = Mathf.Clamp01((Time.time - rotationStartTime) * rotationSpeed);
+            float rotationTime = Mathf.Clamp01((Time.time - rotationStartTime) * cameraConfig.RotationSpeed);
             Vector3 targetFollowOffset;
 
             if (Keyboard.current.pageDownKey.isPressed)
