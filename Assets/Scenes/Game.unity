@@ -4052,8 +4052,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d6af5f11139ba152895f5e3456cf2e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NewMonoBehaviourScript
-  keyboardPanSpeed: 5
   cameraTarget: {fileID: 1878216888}
+  cinemachineCamera: {fileID: 1311742902}
+  keyboardPanSpeed: 5
+  zoomSpeed: 1
+  rotationSpeed: 1
+  zoomDistance: 1
+  minZoomDistance: 7.5
 --- !u!1001 &332197402
 PrefabInstance:
   m_ObjectHideFlags: 0
