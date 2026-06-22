@@ -1,18 +1,20 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
-
+using GameDevTV.RTS.Units;
 namespace GameDevTV.RTS.Player
 {
     public class NewMonoBehaviourScript : MonoBehaviour
     {
         [SerializeField] private Rigidbody cameraTarget;
+        [SerializeField] private new Camera camera;
         [SerializeField] private CinemachineCamera cinemachineCamera;
         [SerializeField] private CameraConfig cameraConfig;
         private CinemachineFollow cinemachineFollow;
         private float zoomStartTime;
         private float rotationStartTime;
         private Vector3 startingFollowOffset;
+        private ISelectable selectedUnit;
 
         private float maxRotationAmount;
 
@@ -33,6 +35,31 @@ namespace GameDevTV.RTS.Player
             HandlePanning();
             HandleZooming();
             HandleRotation();
+            HandleLeftClick();
+        }
+
+        private void HandleLeftClick()
+        {
+            if (camera == null) { return; }
+            Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (Mouse.current.leftButton.wasReleasedThisFrame)
+            {
+                if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, LayerMask.GetMask("Default"))
+                    && hit.collider.TryGetComponent(out ISelectable selectable))
+                {
+                    if (selectedUnit != null)
+                    {
+                        selectedUnit.Deselect();
+                    }
+                    selectable.Select();
+                    selectedUnit = selectable;
+                }
+                else if (selectedUnit != null)
+                {
+                    selectedUnit.Deselect();
+                    selectedUnit = null;
+                }
+            }
         }
 
         void HandlePanning()
