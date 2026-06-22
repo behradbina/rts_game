@@ -10,6 +10,9 @@ namespace GameDevTV.RTS.Player
         [SerializeField] private new Camera camera;
         [SerializeField] private CinemachineCamera cinemachineCamera;
         [SerializeField] private CameraConfig cameraConfig;
+
+        [SerializeField] private LayerMask selectableUnitsLayers;
+        [SerializeField] private LayerMask floorLayers;
         private CinemachineFollow cinemachineFollow;
         private float zoomStartTime;
         private float rotationStartTime;
@@ -36,6 +39,20 @@ namespace GameDevTV.RTS.Player
             HandleZooming();
             HandleRotation();
             HandleLeftClick();
+            HandleRightClick();
+        }
+
+        private void HandleRightClick()
+        {
+            if (selectedUnit == null || selectedUnit is not IMoveable moveable) { return; }
+
+            Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+            if (Mouse.current.rightButton.wasReleasedThisFrame
+            && Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, floorLayers))
+            {
+                moveable.MoveTo(hit.point);
+            }
         }
 
         private void HandleLeftClick()
@@ -44,21 +61,19 @@ namespace GameDevTV.RTS.Player
             Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Mouse.current.leftButton.wasReleasedThisFrame)
             {
-                if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, LayerMask.GetMask("Default"))
-                    && hit.collider.TryGetComponent(out ISelectable selectable))
-                {
-                    if (selectedUnit != null)
-                    {
-                        selectedUnit.Deselect();
-                    }
-                    selectable.Select();
-                    selectedUnit = selectable;
-                }
-                else if (selectedUnit != null)
+                if (selectedUnit != null)
                 {
                     selectedUnit.Deselect();
                     selectedUnit = null;
                 }
+
+                if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, selectableUnitsLayers)
+                    && hit.collider.TryGetComponent(out ISelectable selectable))
+                {   
+                    selectable.Select();
+                    selectedUnit = selectable;
+                }
+                
             }
         }
 
