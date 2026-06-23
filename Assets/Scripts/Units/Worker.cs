@@ -1,41 +1,9 @@
-using UnityEngine;
-using UnityEngine.AI;
-using UnityEngine.Rendering.Universal;
-using GameDevTV.RTS.Events;
-using GameDevTV.RTS.EventBus;
+
 namespace GameDevTV.RTS.Units
 {
-    [RequireComponent(typeof(NavMeshAgent))]
-    public class Worker : MonoBehaviour, ISelectable, IMoveable
+    
+    public class Worker : AbstractUnit
     {
-        [SerializeField] private DecalProjector decalProjector;
-        private NavMeshAgent agent;
-
-        public void Select()
-        {
-            if(decalProjector != null)
-            {
-                decalProjector.gameObject.SetActive(true);
-            }
-            Bus<UnitSelectedEvent>.Raise(new UnitSelectedEvent(this));
-        }
-        public void Deselect()
-        {
-            if(decalProjector != null)
-            {
-                decalProjector.gameObject.SetActive(false);
-            }
-            Bus<UnitDeselectedEvent>.Raise(new UnitDeselectedEvent(this));
-        }
-        public void MoveTo(Vector3 position)
-        {
-            agent.SetDestination(position);
-        }
-
-        private void Awake()
-        {
-            agent = GetComponent<NavMeshAgent>();
-        }
-
+        
     }
 }
