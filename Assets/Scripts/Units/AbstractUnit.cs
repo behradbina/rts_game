@@ -11,6 +11,7 @@ namespace GameDevTV.RTS.Units
     {
         [SerializeField] private DecalProjector decalProjector;
         private NavMeshAgent agent;
+        public float AgentRadius => agent.radius;
 
 
         private void Awake()

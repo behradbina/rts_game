@@ -71,7 +71,6 @@ namespace GameDevTV.RTS.Player
             HandlePanning();
             HandleZooming();
             HandleRotation();
-            HandleLeftClick();
             HandleRightClick();
             HandleDragSelect();
         }
@@ -80,36 +79,55 @@ namespace GameDevTV.RTS.Player
         {
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
-                selectionBox.sizeDelta = Vector2.zero;
-                selectionBox.gameObject.SetActive(true);
-                startingMousePosition = Mouse.current.position.ReadValue();
-                addedUnits.Clear();
+                HandleMouseDown();
             }
             else if (Mouse.current.leftButton.isPressed && !Mouse.current.leftButton.wasPressedThisFrame)
             {
-                Bounds selectionBoxBounds = ResizeSelectionBox();
-                
-                foreach(AbstractUnit unit in aliveUnits)
-                {
-                    if (unit is not ISelectable selectable) { continue; }
-
-                    Vector2 unitPosition = camera.WorldToScreenPoint(unit.transform.position);
-                    if (selectionBoxBounds.Contains(unitPosition))
-                    {
-                        addedUnits.Add(unit);
-                    }
-                }
+                HandleMouseDrag();
 
             }
             else if (Mouse.current.leftButton.wasReleasedThisFrame)
             {
-                //select new units
+                
+                HandleMouseUp();
+            }
+        }
+
+        private void HandleMouseUp()
+        {
+            if (selectedUnits.Count > 0 && !Keyboard.current.shiftKey.isPressed)
+            {
                 deselectAllUnits();
-                foreach (AbstractUnit unit in addedUnits)
+            }
+
+            HandleLeftClick();
+            foreach (AbstractUnit unit in addedUnits)
+            {
+                unit.Select();
+            }
+            selectionBox.gameObject.SetActive(false);
+        }
+        private void HandleMouseDown()
+        {
+            selectionBox.sizeDelta = Vector2.zero;
+            selectionBox.gameObject.SetActive(true);
+            startingMousePosition = Mouse.current.position.ReadValue();
+            addedUnits.Clear();
+        }
+
+        private void HandleMouseDrag()
+        {
+            Bounds selectionBoxBounds = ResizeSelectionBox();
+
+            foreach(AbstractUnit unit in aliveUnits)
+            {
+                if (unit is not ISelectable selectable) { continue; }
+
+                Vector2 unitPosition = camera.WorldToScreenPoint(unit.transform.position);
+                if (selectionBoxBounds.Contains(unitPosition))
                 {
-                    unit.Select();
+                    addedUnits.Add(unit);
                 }
-                selectionBox.gameObject.SetActive(false);
             }
         }
 
@@ -144,11 +162,38 @@ namespace GameDevTV.RTS.Player
             if (Mouse.current.rightButton.wasReleasedThisFrame
             && Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, floorLayers))
             {
-                foreach(ISelectable unit in selectedUnits)
+                List<AbstractUnit> abstractUnits = new(selectedUnits.Count);
+                foreach (ISelectable selectable in selectedUnits)
                 {
-                    if (unit is IMoveable moveable)
+                    if (selectable is AbstractUnit unit)
                     {
-                        moveable.MoveTo(hit.point);
+                        abstractUnits.Add(unit);
+                    }
+                }
+
+                int unitsOnLayer = 0;
+                int maxUnitsOnLayer = 1;
+                float circleRadius = 0;
+                float radialOffset = 0;
+
+                foreach (AbstractUnit unit in abstractUnits)
+                {
+                    Vector3 targetPosition = new(
+                        hit.point.x + circleRadius * Mathf.Cos(radialOffset * unitsOnLayer),
+                        hit.point.y,
+                        hit.point.z + circleRadius * Mathf.Sin(radialOffset * unitsOnLayer)
+                    );
+
+                    unit.MoveTo(targetPosition);
+                    unitsOnLayer++;
+
+                    if (unitsOnLayer >= maxUnitsOnLayer)
+                    {
+                        
+                        unitsOnLayer = 0;
+                        circleRadius += unit.AgentRadius * 3.5f;
+                        maxUnitsOnLayer = Mathf.FloorToInt(2 * Mathf.PI * circleRadius / (unit.AgentRadius * 2));
+                        radialOffset = 2 * Mathf.PI / maxUnitsOnLayer;
                     }
                 }
             }
@@ -156,22 +201,19 @@ namespace GameDevTV.RTS.Player
 
         private void HandleLeftClick()
         {
-            // if (camera == null) { return; }
-            // Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            // if (Mouse.current.leftButton.wasReleasedThisFrame)
-            // {
-            //     if (selectedUnit != null)
-            //     {
-            //         selectedUnit.Deselect();
-            //     }
+            if (camera == null) { return; }
+            Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            
+            
+            
 
-            //     if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, selectableUnitsLayers)
-            //         && hit.collider.TryGetComponent(out ISelectable selectable))
-            //     {   
-            //         selectable.Select();
-            //     }
+            if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, selectableUnitsLayers)
+                && hit.collider.TryGetComponent(out ISelectable selectable))
+            {   
+                selectable.Select();
+            }
                 
-            // }
+            
         }
 
         void HandlePanning()
